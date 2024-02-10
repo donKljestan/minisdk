@@ -1,5 +1,6 @@
 
 #include "minisdk/DeviceManager.hpp"
+#include "minisdk/trace.hpp"
 #include <iostream>
 #include <shared_mutex>
 #include <stdexcept>
@@ -26,7 +27,7 @@ void DeviceManager::addDevice(std::unique_ptr<IDevice> device) {
             throw std::invalid_argument("DeviceManager::addDevice: duplicate device id " + std::to_string(id));
         }
     }
-    std::cout << "Added device: " << id << std::endl;
+    if constexpr (traceEnabled) std::cout << "Added device: " << id << std::endl;
 }
 
 void DeviceManager::removeDevice(unsigned int id) {
@@ -36,7 +37,7 @@ void DeviceManager::removeDevice(unsigned int id) {
         removed = devices.erase(id) > 0;
     }
     if (removed) {
-        std::cout << "Removed device: " << id << std::endl;
+        if constexpr (traceEnabled) std::cout << "Removed device: " << id << std::endl;
     }
 }
 

@@ -1,5 +1,6 @@
 
 #include "minisdk/SimulatedDevice.hpp"
+#include "minisdk/trace.hpp"
 #include <cstdint>
 #include <iostream>
 
@@ -13,13 +14,13 @@ SimulatedDevice::SimulatedDevice(const std::string &name_, unsigned int id_): ID
 }
 
 void SimulatedDevice::send(const Buffer &buffer) {
-    std::cout << "Buffer size: " << buffer.getSize() << " send to: {" << name << getId() << "}" << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer size: " << buffer.getSize() << " send to: {" << name << getId() << "}" << std::endl;
     writeRegister("TX_PACKET_COUNT", readRegister("TX_PACKET_COUNT") + 1);
 }
 
 Buffer SimulatedDevice::receive() {
     Buffer buffer(50);
-    std::cout << "Buffer size: " << buffer.getSize() << " received on: {" << name << getId() << "}" << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer size: " << buffer.getSize() << " received on: {" << name << getId() << "}" << std::endl;
     writeRegister("RX_PACKET_COUNT", readRegister("RX_PACKET_COUNT") + 1);
     return buffer;
 }

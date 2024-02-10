@@ -1,5 +1,6 @@
 
 #include "minisdk/ThreadPool.hpp"
+#include "minisdk/trace.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -50,7 +51,7 @@ void ThreadPool::enqueue(std::function<void()> job) {
 
 void ThreadPool::run(unsigned int id_) {
 
-    std::cout << ("Thread id: " + std::to_string(id_) + " created.\n");
+    if constexpr (traceEnabled) std::cout << ("Thread id: " + std::to_string(id_) + " created.\n");
 
     while (true) {
         std::function<void()> job;
@@ -71,7 +72,7 @@ void ThreadPool::run(unsigned int id_) {
         }
     }
 
-    std::cout << ("Thread id: " + std::to_string(id_) + " finished.\n");
+    if constexpr (traceEnabled) std::cout << ("Thread id: " + std::to_string(id_) + " finished.\n");
 }
 
 } // namespace minisdk

@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "minisdk/buffer.hpp"
+#include "minisdk/trace.hpp"
 #include <algorithm>
 
 using namespace minisdk;
@@ -8,17 +9,17 @@ using namespace minisdk;
 Buffer::Buffer() {
     this->size = 0;
     this->data = nullptr;
-    std::cout << "Buffer created with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer created with size:" << this->size << std::endl;
 }
 
 Buffer::~Buffer() {
     delete[] this->data;
-    std::cout << "Buffer deleted with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer deleted with size:" << this->size << std::endl;
 }
 
 Buffer::Buffer(size_t size_): size(size_) {
     this->data = new unsigned char[this->size]();
-    std::cout << "Buffer created with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer created with size:" << this->size << std::endl;
 }
 
 Buffer::Buffer(const Buffer &other) {
@@ -26,13 +27,13 @@ Buffer::Buffer(const Buffer &other) {
     this->size = other.size;
     this->data = new unsigned char[this->size];
     std::copy(other.data, other.data + other.size, this->data);
-    std::cout << "Buffer copied with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer copied with size:" << this->size << std::endl;
 }
 
 Buffer& Buffer::operator=(const Buffer &other) {
     Buffer tmp(other);
     swap(*this, tmp);
-    std::cout << "Buffer assigned with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer assigned with size:" << this->size << std::endl;
 
     return *this;
 }
@@ -43,7 +44,7 @@ Buffer::Buffer(Buffer &&other) noexcept {
     this->data = other.data;
     other.data = nullptr;
     other.size = 0;
-    std::cout << "Buffer moved with size: " << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer moved with size: " << this->size << std::endl;
 }
 
 Buffer& Buffer::operator=(Buffer &&other) noexcept {
@@ -57,7 +58,7 @@ Buffer& Buffer::operator=(Buffer &&other) noexcept {
     this->data = other.data;
     other.data = nullptr;
     other.size = 0;
-    std::cout << "Buffer move-assigned with size:" << this->size << std::endl;
+    if constexpr (traceEnabled) std::cout << "Buffer move-assigned with size:" << this->size << std::endl;
 
     return *this;
 }
