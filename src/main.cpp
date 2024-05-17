@@ -1,7 +1,7 @@
 
 
+#include <cstdlib>
 #include <memory>
-#include <cassert>
 #include <stdexcept>
 #include <string>
 #include "minisdk/buffer.hpp"
@@ -13,6 +13,14 @@
 #include "minisdk/ThreadPool.hpp"
 
 using namespace minisdk;
+
+// Not assert(): NDEBUG would compile the checks away and the demo would still claim success.
+static void check(bool condition, const char* what) {
+    if (!condition) {
+        std::cerr << "FAILED: " << what << std::endl;
+        std::abort();
+    }
+}
 
 static void section(const std::string& title) {
     std::cout << "\n=== " << title << " ===" << std::endl;
@@ -49,10 +57,10 @@ void demoDeviceRegisters() {
     for (const auto& regName : changed) std::cout << regName << " ";
     std::cout << std::endl;
 
-    assert(port0->readRegister("TX_PACKET_COUNT") == 3);
-    assert(port0->readRegister("RX_PACKET_COUNT") == 2);
-    assert(changed.size() == 2); // only the TX/RX counters moved; LINK_STATUS and MTU stayed put
-    assert(!(before == after));
+    check(port0->readRegister("TX_PACKET_COUNT") == 3, "three sends must be counted");
+    check(port0->readRegister("RX_PACKET_COUNT") == 2, "two receives must be counted");
+    check(changed.size() == 2, "only the TX/RX counters moved; LINK_STATUS and MTU stayed put");
+    check(!(before == after), "snapshots taken around traffic must differ");
 
     std::cout << "OK: snapshot diff reported exactly the two counters that changed" << std::endl;
 }
@@ -72,11 +80,11 @@ void demoDeviceManagerRouting() {
     manager.sendBuffer(2, b2);
     Buffer b3 = manager.receiveBuffer(0);
 
-    assert(manager.getRegister(0, "TX_PACKET_COUNT") == 0); // nothing was sent to port 0
-    assert(manager.getRegister(1, "TX_PACKET_COUNT") == 1);
-    assert(manager.getRegister(2, "TX_PACKET_COUNT") == 1);
-    assert(manager.getRegister(0, "RX_PACKET_COUNT") == 1);
-    assert(b3.getSize() == 50);
+    check(manager.getRegister(0, "TX_PACKET_COUNT") == 0, "nothing was sent to port 0");
+    check(manager.getRegister(1, "TX_PACKET_COUNT") == 1, "port 1 received exactly one buffer");
+    check(manager.getRegister(2, "TX_PACKET_COUNT") == 1, "port 2 received exactly one buffer");
+    check(manager.getRegister(0, "RX_PACKET_COUNT") == 1, "port 0 served one receive");
+    check(b3.getSize() == 50, "receive returns the simulated payload size");
 
     bool unknownIdRejected = false;
     try {
@@ -84,7 +92,7 @@ void demoDeviceManagerRouting() {
     } catch (const std::out_of_range&) {
         unknownIdRejected = true;
     }
-    assert(unknownIdRejected);
+    check(unknownIdRejected, "an unknown device id must be rejected");
 
     std::cout << "OK: each buffer reached only its target device, unknown id threw" << std::endl;
 }
@@ -122,8 +130,8 @@ void demoEventBusPubSub() {
     eventBus.eventHappen("LINK_STATUS", " connected.");
     eventBus.eventHappen("MTU", "9000"); // registered but has no subscribers
 
-    assert(txNotifications == 2); // both subscribers of the event fired
-    assert(linkNotifications == 1);
+    check(txNotifications == 2, "both subscribers of the event fired");
+    check(linkNotifications == 1, "the unrelated event reached only its own subscriber");
 
     std::cout << "OK: publish reached every subscriber of the event and no one else" << std::endl;
 }
@@ -156,12 +164,12 @@ void demoLockedCounterUnderContention() {
         t.join();
     }
 
-    // Read outside the assert so the call is not compiled away under NDEBUG.
+    // Read outside the check so the call is never optimised out of the demo.
     const uint32_t txCount = deviceManager.getRegister(0, "TX_PACKET_COUNT");
     std::cout << "TX_PACKET_COUNT: " << txCount << std::endl;
     // std::cout << "Counter: " << counter << std::endl;
 
-    assert(txCount == 8000); // 8 threads x 1000; without the device lock increments get lost here
+    check(txCount == 8000, "8 threads x 1000 sends; without the device lock increments get lost");
 
     std::cout << "OK: 8000 increments survived, no lost updates" << std::endl;
 }
@@ -185,7 +193,7 @@ void demoThreadPoolDispatch() {
     const uint32_t txCount = deviceManager.getRegister(0, "TX_PACKET_COUNT");
     std::cout << "TX_PACKET_COUNT: " << txCount << std::endl;
 
-    assert(txCount == 8000); // every job must have run before shutdown() returned
+    check(txCount == 8000, "every job must have run before shutdown() returned");
 
     std::cout << "OK: queue fully drained, no job dropped" << std::endl;
 }
