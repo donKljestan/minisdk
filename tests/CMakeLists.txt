@@ -27,4 +27,6 @@ if(catch2_SOURCE_DIR)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 endif()
 include(Catch)
-catch_discover_tests(minisdk_tests)
+# PRE_TEST keeps enumeration out of the build step, so a runtime problem surfaces as a failing
+# test instead of a failed build.
+catch_discover_tests(minisdk_tests DISCOVERY_MODE PRE_TEST)

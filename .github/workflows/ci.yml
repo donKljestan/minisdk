@@ -39,6 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Ubuntu 24.04 defaults vm.mmap_rnd_bits to 32; the sanitizer runtimes cannot place their
+      # shadow memory with that much ASLR entropy and abort at process start.
+      - name: Lower ASLR entropy for the sanitizer runtime
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
+
       - name: Configure
         run: >
           cmake -B build
