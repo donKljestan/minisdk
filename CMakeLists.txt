@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(MINISDK_BUILD_TESTS "Build the unit test suite" ON)
+option(MINISDK_BUILD_BENCH "Build the allocator benchmark" ON)
 option(MINISDK_TRACE "Print lifetime/IO tracing from the library (slow, noisy)" OFF)
 set(MINISDK_SANITIZE "" CACHE STRING "Sanitizer to enable: address, thread, undefined")
 
@@ -21,6 +22,7 @@ target_compile_options(minisdk_warnings INTERFACE -Wall -Wextra -Wshadow -Werror
 
 add_library(minisdk
     src/buffer.cpp
+    src/BufferPool.cpp
     src/SimulatedDevice.cpp
     src/DeviceManager.cpp
     src/EventBus.cpp
@@ -38,6 +40,10 @@ target_link_libraries(minisdk PUBLIC Threads::Threads)
 
 add_executable(minisdk_demo src/main.cpp)
 target_link_libraries(minisdk_demo PRIVATE minisdk minisdk_warnings)
+
+if(MINISDK_BUILD_BENCH)
+    add_subdirectory(bench)
+endif()
 
 if(MINISDK_BUILD_TESTS)
     enable_testing()
