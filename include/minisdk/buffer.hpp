@@ -4,14 +4,22 @@
 
 namespace minisdk {
 
+class BufferPool;
+
 class Buffer {
 private:
     unsigned char *data;
     size_t size;
+    // Null means plain new[]/delete[]. A pool must outlive every Buffer that was given it.
+    BufferPool* pool;
+
+    unsigned char* allocatePayload(size_t bytes) const;
+    void freePayload(unsigned char* payload) const noexcept;
+
 public:
     
     Buffer(); 
-    explicit Buffer(size_t size_); 
+    explicit Buffer(size_t size_, BufferPool* pool_ = nullptr);
     ~Buffer(); //destruktor
     Buffer(const Buffer &other); 
     Buffer& operator=(const Buffer &other); 
@@ -24,6 +32,7 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const Buffer &buffer);
     friend void swap(Buffer& a, Buffer& b) noexcept;
     size_t getSize() const;
+    BufferPool* allocator() const noexcept { return pool; }
 
 };
 

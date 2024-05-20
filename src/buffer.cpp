@@ -1,31 +1,57 @@
 
 #include <iostream>
 #include "minisdk/buffer.hpp"
+#include "minisdk/BufferPool.hpp"
 #include "minisdk/trace.hpp"
 #include <algorithm>
+#include <cstring>
 
 using namespace minisdk;
+
+unsigned char* Buffer::allocatePayload(size_t bytes) const {
+    if (bytes == 0) {
+        return nullptr;
+    }
+    if (pool == nullptr) {
+        return new unsigned char[bytes]();
+    }
+    // The pool hands back raw memory, so zero it to match new unsigned char[n]() - both paths
+    // must do the same work for the benchmark to compare anything meaningful.
+    auto* payload = static_cast<unsigned char*>(pool->allocate(bytes));
+    std::memset(payload, 0, bytes);
+    return payload;
+}
+
+void Buffer::freePayload(unsigned char* payload) const noexcept {
+    if (pool == nullptr) {
+        delete[] payload;
+    } else {
+        pool->deallocate(payload);
+    }
+}
 
 Buffer::Buffer() {
     this->size = 0;
     this->data = nullptr;
+    this->pool = nullptr;
     if constexpr (traceEnabled) std::cout << "Buffer created with size:" << this->size << std::endl;
 }
 
 Buffer::~Buffer() {
-    delete[] this->data;
+    freePayload(this->data);
     if constexpr (traceEnabled) std::cout << "Buffer deleted with size:" << this->size << std::endl;
 }
 
-Buffer::Buffer(size_t size_): size(size_) {
-    this->data = new unsigned char[this->size]();
+Buffer::Buffer(size_t size_, BufferPool* pool_): size(size_), pool(pool_) {
+    this->data = allocatePayload(this->size);
     if constexpr (traceEnabled) std::cout << "Buffer created with size:" << this->size << std::endl;
 }
 
 Buffer::Buffer(const Buffer &other) {
 
     this->size = other.size;
-    this->data = new unsigned char[this->size];
+    this->pool = other.pool; // a copy keeps using the same allocator as its source
+    this->data = allocatePayload(this->size);
     std::copy(other.data, other.data + other.size, this->data);
     if constexpr (traceEnabled) std::cout << "Buffer copied with size:" << this->size << std::endl;
 }
@@ -42,6 +68,7 @@ Buffer::Buffer(Buffer &&other) noexcept {
 
     this->size = other.size;
     this->data = other.data;
+    this->pool = other.pool;
     other.data = nullptr;
     other.size = 0;
     if constexpr (traceEnabled) std::cout << "Buffer moved with size: " << this->size << std::endl;
@@ -53,9 +80,10 @@ Buffer& Buffer::operator=(Buffer &&other) noexcept {
         return *this;
     }
 
-    delete[] this->data;
+    freePayload(this->data);
     this->size = other.size;
     this->data = other.data;
+    this->pool = other.pool;
     other.data = nullptr;
     other.size = 0;
     if constexpr (traceEnabled) std::cout << "Buffer move-assigned with size:" << this->size << std::endl;
@@ -77,6 +105,7 @@ std::ostream& operator<<(std::ostream& out, const Buffer &buffer) {
 void swap(Buffer& a, Buffer& b) noexcept {
     std::swap(a.data, b.data);
     std::swap(a.size, b.size);
+    std::swap(a.pool, b.pool);
 }
 
 } // namespace minisdk
@@ -107,7 +136,7 @@ Buffer& Buffer::operator+=(const Buffer& other)
     size_t old_size = this->size;
     size_t new_size = old_size + other.size;
 
-    unsigned char* new_data = new unsigned char[new_size];
+    unsigned char* new_data = allocatePayload(new_size);
 
     for (size_t i = 0; i < old_size; ++i)
         new_data[i] = this->data[i];
@@ -115,7 +144,7 @@ Buffer& Buffer::operator+=(const Buffer& other)
     for (size_t i = 0; i < other.size; ++i)
         new_data[old_size + i] = other.data[i];
 
-    delete[] this->data;
+    freePayload(this->data);
 
     this->data = new_data;
     this->size = new_size;
