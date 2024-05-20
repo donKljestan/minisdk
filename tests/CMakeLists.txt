@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(minisdk_tests
     test_buffer.cpp
+    test_buffer_pool.cpp
     test_register_map.cpp
     test_simulated_device.cpp
     test_event_bus.cpp
